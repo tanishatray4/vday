@@ -1,50 +1,297 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>For You ❤️</title>
+  <meta charset="utf-8" />
+  <title>Open This 💘</title>
   <style>
     body {
       text-align: center;
-      font-family: Arial;
-      margin-top: 100px;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      padding-top: 90px;
+      background: linear-gradient(180deg, #fff, #ffe6f2);
     }
+
+    h1 { margin: 0 16px 18px; }
+    p { margin: 0 16px 24px; opacity: 0.85; }
+
+    .btns {
+      display: inline-flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 0 16px;
+    }
+
     button {
       font-size: 24px;
-      padding: 15px 30px;
-      margin: 10px;
-      position: relative;
+      padding: 14px 26px;
+      margin: 8px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+      transition: transform 120ms ease;
+    }
+    button:active { transform: scale(0.98); }
+
+    #yesBtn { background: #ff4d88; color: white; }
+    #noBtn  { background: #f2f2f2; color: #222; }
+
+    /* Heart rain */
+    .heart {
+      position: fixed;
+      top: -40px;
+      font-size: 22px;
+      pointer-events: none;
+      animation: fall linear forwards;
+      opacity: 0.9;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12));
+    }
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotate(360deg);
+        opacity: 0.1;
+      }
+    }
+
+    /* Confetti */
+    canvas#confetti {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* Little footer */
+    .footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 10px;
+      font-size: 13px;
+      opacity: 0.55;
+      pointer-events: none;
     }
   </style>
 </head>
-<body>
-  <h1>Will you be my Valentine? 💘</h1>
 
-  <button onclick="yes()">YES 💖</button>
-  <button id="no">NO 😅</button>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <h1>Will you be my Valentine? 💘</h1>
+  <p>(You can try “NO”… if you dare 😈)</p>
+
+  <div class="btns">
+    <button id="yesBtn">YES 💖</button>
+    <button id="noBtn">NO 😅</button>
+  </div>
+
+  <div class="footer">Made with 💕 — fork it & make your own</div>
 
   <script>
-    function yes() {
-      document.body.innerHTML = "<h1>YAY!!! I LOVE YOU 💕 (that didn't happen, fuck you)</h1>";
-    }
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
 
-    const noBtn = document.getElementById("no");
+    // -----------------------------
+    // 1) NO button shrinks + runs away + says "pls stop"
+    // -----------------------------
+    let scale = 1;
+    let noTries = 0;
 
-    function moveNo() {
-      const x = Math.random() * (window.innerWidth - 100);
-      const y = Math.random() * (window.innerHeight - 100);
-      noBtn.style.position = "absolute";
+    function moveNoButton() {
+      noTries++;
+
+      // shrink each time
+      scale = Math.max(0.18, scale - 0.12);
+      noBtn.style.transform = `scale(${scale})`;
+
+      // change text (escalation)
+      if (noTries === 1) noBtn.textContent = "pls stop 🥺";
+      else if (noTries === 2) noBtn.textContent = "hey 😭";
+      else if (noTries === 3) noBtn.textContent = "be nice 😤";
+      else if (noTries >= 4)  noBtn.textContent = "NO? 👀";
+
+      // teleport somewhere on screen
+      const padding = 20;
+      const w = 140, h = 80; // approximate button box
+      const x = Math.random() * (window.innerWidth  - w - padding * 2) + padding;
+      const y = Math.random() * (window.innerHeight - h - padding * 2) + padding;
+
+      noBtn.style.position = "fixed";
       noBtn.style.left = x + "px";
-      noBtn.style.top = y + "px";
+      noBtn.style.top  = y + "px";
     }
 
-    // runs away from mouse
-    noBtn.addEventListener("mouseover", moveNo);
+    // runs away on hover, touch, or keyboard focus
+    ["mouseover", "touchstart", "focus"].forEach(evt =>
+      noBtn.addEventListener(evt, (e) => {
+        e.preventDefault();
+        moveNoButton();
+      }, { passive: false })
+    );
 
-    // runs away on phone touch
-    noBtn.addEventListener("touchstart", moveNo);
+    // If someone somehow clicks it, still refuse 😈
+    noBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      moveNoButton();
+    });
 
-    // runs away if someone tries keyboard focus
-    noBtn.addEventListener("focus", moveNo);
+    // -----------------------------
+    // 2) Confetti explosion on YES
+    // -----------------------------
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+    let confetti = [];
+    let confettiRunning = false;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function burstConfetti() {
+      const count = 220;
+      const originX = window.innerWidth / 2;
+      const originY = window.innerHeight / 3;
+
+      for (let i = 0; i < count; i++) {
+        confetti.push({
+          x: originX,
+          y: originY,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 1.2) * 14,
+          g: 0.35 + Math.random() * 0.2,
+          size: 5 + Math.random() * 5,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.35,
+          life: 160 + Math.random() * 40
+        });
+      }
+
+      if (!confettiRunning) {
+        confettiRunning = true;
+        requestAnimationFrame(drawConfetti);
+      }
+    }
+
+    function drawConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      confetti = confetti.filter(p => p.life > 0);
+      for (const p of confetti) {
+        p.life--;
+        p.vy += p.g;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+
+      if (confetti.length > 0) {
+        requestAnimationFrame(drawConfetti);
+      } else {
+        confettiRunning = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // give confetti some variety without picking specific colors:
+    // (Browser default fillStyle is black; we can randomize using HSL without "brand colors".)
+    // We'll set per frame to keep it lively.
+    const originalFillRect = ctx.fillRect.bind(ctx);
+    ctx.fillRect = function(x,y,w,h) {
+      ctx.fillStyle = `hsl(${Math.floor(Math.random()*360)}, 90%, 60%)`;
+      originalFillRect(x,y,w,h);
+    };
+
+    // -----------------------------
+    // 3) Heart rain animation (continuous)
+    // -----------------------------
+    function spawnHeart() {
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.textContent = "💖";
+
+      const left = Math.random() * 100;
+      heart.style.left = left + "vw";
+
+      const duration = 3.5 + Math.random() * 3.5;
+      heart.style.animationDuration = duration + "s";
+
+      const size = 16 + Math.random() * 22;
+      heart.style.fontSize = size + "px";
+
+      document.body.appendChild(heart);
+
+      setTimeout(() => heart.remove(), (duration + 0.2) * 1000);
+    }
+
+    // spawn hearts regularly
+    setInterval(spawnHeart, 220);
+
+    // -----------------------------
+    // YES button action: confetti + cute ending screen
+    // -----------------------------
+    yesBtn.addEventListener("click", () => {
+      burstConfetti();
+      setTimeout(() => {
+        document.body.innerHTML = `
+          <canvas id="confetti"></canvas>
+          <h1>YAY!!! I LOVE YOU 💕 (that didn't happen. Fuck you)</h1>
+          <p>You just made my whole day 🥹💘</p>
+        `;
+        // restart confetti canvas after replacing body
+        const c = document.getElementById("confetti");
+        const cctx = c.getContext("2d");
+        c.width = window.innerWidth; c.height = window.innerHeight;
+
+        // quick mini-confetti after the swap
+        let parts = [];
+        for (let i = 0; i < 180; i++) {
+          parts.push({
+            x: window.innerWidth/2,
+            y: window.innerHeight/3,
+            vx: (Math.random()-0.5)*14,
+            vy: (Math.random()-1.2)*12,
+            g: 0.35 + Math.random()*0.2,
+            size: 5 + Math.random()*5,
+            rot: Math.random()*Math.PI,
+            vr: (Math.random()-0.5)*0.35,
+            life: 140 + Math.random()*40
+          });
+        }
+        function anim() {
+          cctx.clearRect(0,0,c.width,c.height);
+          parts = parts.filter(p => p.life > 0);
+          for (const p of parts) {
+            p.life--;
+            p.vy += p.g;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.vr;
+
+            cctx.save();
+            cctx.translate(p.x, p.y);
+            cctx.rotate(p.rot);
+            cctx.fillStyle = `hsl(${Math.floor(Math.random()*360)}, 90%, 60%)`;
+            cctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+            cctx.restore();
+          }
+          if (parts.length) requestAnimationFrame(anim);
+        }
+        anim();
+      }, 350);
+    });
   </script>
 </body>
 </html>
