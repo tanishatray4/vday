@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>For You ❤️</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial;
+      margin-top: 100px;
+    }
+    button {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Will you be my Valentine? 💘</h1>
+
+  <button onclick="yes()">YES 💖</button>
+  <button id="no">NO 😅</button>
+
+  <script>
+    function yes() {
+      document.body.innerHTML = "<h1>YAY!!! I LOVE YOU 💕</h1>";
+    }
+
+    const noBtn = document.getElementById("no");
+    noBtn.onmouseover = () => {
+      noBtn.style.position = "absolute";
+      noBtn.style.left = Math.random() * 300 + "px";
+      noBtn.style.top = Math.random() * 300 + "px";
+    };
+  </script>
+</body>
+</html>
